@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { IceClones } from './clones.js';
 
 // ---------- GPU particle pool (additive glowing points) ----------
 class Particles {
@@ -212,6 +213,14 @@ const EFFECTS = {
       }
     },
   },
+
+  // Snowflake floor + four delayed copies in a V; animation runs in IceClones.update (see clones.js)
+  ice: {
+    duration: 6.5,
+    color: '#9ff6ff',
+    start({ clones, lm, W, H, flash, shake }) { flash('#9ff6ff'); shake(); clones.start(lm, W, H); },
+    tick() {},
+  },
 };
 
 export const EFFECT_NAMES = Object.keys(EFFECTS).filter((k) => k !== 'jump');
@@ -226,6 +235,8 @@ export class Effects {
     this.scene = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera(0, 1, 0, 1, -10, 10); // y down, pixel units
     this.ps = new Particles(this.scene);
+    this.ps.points.renderOrder = 10; // particles above the clone layer
+    this.clones = new IceClones(this.scene, this.renderer);
     this.active = [];
     this.resize();
     new ResizeObserver(() => this.resize()).observe(stageEl);
@@ -276,11 +287,17 @@ export class Effects {
   _ctx(lm) {
     return {
       ps: this.ps, lm, W: this.W, H: this.H, scale: this.H / 720,
-      flash: (c) => this.flash(c), shake: () => this.shake(),
+      flash: (c) => this.flash(c), shake: () => this.shake(), clones: this.clones,
     };
   }
 
+  /** Per detected video frame: hands the segmentation mask to the clone layer while it runs. */
+  setFrame(video, mask, lm) {
+    if (this.clones.wantsMask) this.clones.capture(video, mask, lm, this.W, this.H);
+  }
+
   update(dt, lm) {
+    this.clones.update(dt, this.W, this.H, this.ps, this.H / 720);
     const ctx = lm ? this._ctx(lm) : null;
     for (const a of this.active) {
       a.t += dt;

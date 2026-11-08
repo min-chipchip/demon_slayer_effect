@@ -13,6 +13,7 @@ export async function createPoseLandmarker() {
     minPoseDetectionConfidence: 0.5,
     minPosePresenceConfidence: 0.5,
     minTrackingConfidence: 0.5,
+    outputSegmentationMasks: true, // person cutout for the Ice Clones effect
   });
   try {
     return await PoseLandmarker.createFromOptions(vision, opts('GPU'));

@@ -60,7 +60,7 @@ $('importFile').onchange = async (e) => {
 };
 let testIdx = 0;
 $('testBtn').onclick = () => {
-  const names = ['flame', 'water', 'thunder', 'wind', 'jump'];
+  const names = ['flame', 'water', 'thunder', 'wind', 'ice', 'jump'];
   const name = names[testIdx++ % names.length];
   effects.trigger(name, screenLm ?? fakePose(), name.toUpperCase());
 };
@@ -149,6 +149,8 @@ function loop() {
     lastVideoTime = video.currentTime;
     const res = landmarker.detectForVideo(video, now);
     processPose(res.landmarks?.[0], now);
+    effects.setFrame(video, res.segmentationMasks?.[0], screenLm);
+    res.segmentationMasks?.forEach((m) => m.close()); // free mask memory every frame
     frameCount++;
   }
   if (now - fpsT > 500) { fps = (frameCount * 1000) / (now - fpsT); frameCount = 0; fpsT = now; $('fps').textContent = fps.toFixed(0); }
