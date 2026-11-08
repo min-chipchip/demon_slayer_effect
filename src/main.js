@@ -53,14 +53,14 @@ $('importFile').onchange = async (e) => {
   try {
     const d = JSON.parse(await file.text());
     if (!Array.isArray(d.moves)) throw new Error('missing "moves"');
-    data = { moves: d.moves, idle: d.idle ?? [] };
+    data = store.withBuiltins({ moves: d.moves, idle: d.idle ?? [] });
     persist();
   } catch (err) { alert('Import failed: ' + err.message); }
   e.target.value = '';
 };
 let testIdx = 0;
 $('testBtn').onclick = () => {
-  const names = ['flame', 'water', 'thunder', 'wind', 'ice', 'jump'];
+  const names = ['flame', 'water', 'thunder', 'wind', 'akaza', 'jump'];
   const name = names[testIdx++ % names.length];
   effects.trigger(name, screenLm ?? fakePose(), name.toUpperCase());
 };
@@ -74,9 +74,21 @@ function persist() {
 function renderMoveList() {
   const el = $('moveList');
   el.innerHTML = '';
-  if (!data.moves.length) el.innerHTML = '<p class="hint">No moves yet.</p>';
   for (const m of data.moves) {
     const row = document.createElement('div');
+    if (m.builtin) {
+      // Permanent move: only its footage can be edited (record more / undo last / clear)
+      row.className = 'move builtin';
+      row.innerHTML = `<span><b></b> <span class="tag">Permanent</span><small></small></span><span><button data-a="rec">Record footage</button> <button data-a="undo">Undo last</button> <button data-a="clr">Clear</button></span>`;
+      row.querySelector('b').textContent = m.name;
+      row.querySelector('small').textContent = `${m.templates.length} clip(s) · ${m.durationMs / 1000}s`;
+      row.querySelector('[data-a=rec]').onclick = () => startRecording('move', m);
+      row.querySelector('[data-a=undo]').onclick = () => { m.templates.pop(); persist(); };
+      row.querySelector('[data-a=undo]').disabled = row.querySelector('[data-a=clr]').disabled = !m.templates.length;
+      row.querySelector('[data-a=clr]').onclick = () => { if (confirm(`Clear all ${m.templates.length} clip(s) of "${m.name}"?`)) { m.templates = []; persist(); } };
+      el.appendChild(row);
+      continue;
+    }
     row.className = 'move';
     row.innerHTML = `<span><b></b> <small></small></span><span><button data-a="undo">Undo last</button> <button data-a="del">Delete</button></span>`;
     row.querySelector('b').textContent = m.name;
@@ -99,11 +111,18 @@ function renderMoveList() {
 }
 
 // ---------------- recording ----------------
-function startRecording(kind) {
+/** @param target optional existing move to add footage to (used by permanent moves) */
+function startRecording(kind, target) {
   if (!landmarker) { alert('Start the camera first.'); return; }
   if (rec) return;
+  if (target) {
+    rec = { kind, name: target.name, targetId: target.id, effect: target.effect, durationMs: target.durationMs, start: performance.now() + 3000, frames: [] };
+    return;
+  }
   const name = $('moveName').value.trim();
   if (kind === 'move' && !name) { alert('Enter a move name first.'); return; }
+  const builtin = data.moves.find((x) => x.builtin && x.name.toLowerCase() === name.toLowerCase());
+  if (kind === 'move' && builtin) { alert(`"${builtin.name}" is a permanent move — use its "Record footage" button.`); return; }
   const durationMs = kind === 'idle' ? 6000 : +$('moveDur').value;
   rec = { kind, name, effect: $('moveEffect').value, durationMs, start: performance.now() + 3000, frames: [] };
 }
@@ -129,9 +148,11 @@ function updateRecording(now, frame) {
   if (r.kind === 'idle') {
     data.idle.push(clip);
   } else {
-    let m = data.moves.find((x) => x.name.toLowerCase() === r.name.toLowerCase());
+    let m = r.targetId
+      ? data.moves.find((x) => x.id === r.targetId)
+      : data.moves.find((x) => !x.builtin && x.name.toLowerCase() === r.name.toLowerCase());
     if (!m) { m = { id: crypto.randomUUID(), name: r.name, effect: r.effect, durationMs: r.durationMs, templates: [] }; data.moves.push(m); }
-    m.effect = r.effect;
+    if (!m.builtin) m.effect = r.effect;
     m.templates.push(clip);
   }
   persist();

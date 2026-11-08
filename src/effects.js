@@ -214,10 +214,13 @@ const EFFECTS = {
     },
   },
 
-  // Snowflake floor + four delayed copies in a V; animation runs in IceClones.update (see clones.js)
-  ice: {
+  // Akaza's Destructive Death – Final Form (built-in move only): snowflake floor + four delayed
+  // copies in a V; animation runs in IceClones.update (see clones.js)
+  akaza: {
     duration: 6.5,
     color: '#9ff6ff',
+    bannerImg: '/effects/title-ice.png',
+    exclusive: true, // don't restart while it's already playing
     start({ clones, lm, W, H, flash, shake }) { flash('#9ff6ff'); shake(); clones.start(lm, W, H); },
     tick() {},
   },
@@ -264,9 +267,17 @@ export class Effects {
     this.stage.classList.add('shake');
   }
 
-  banner(text, color) {
+  banner(text, color, img) {
     const el = this.bannerEl;
-    el.textContent = text;
+    if (img) {
+      const im = new Image();
+      im.src = img;
+      im.alt = text;
+      el.replaceChildren(im);
+    } else {
+      el.textContent = text;
+    }
+    el.classList.toggle('img', !!img);
     el.style.color = color;
     el.classList.remove('show');
     void el.offsetWidth;
@@ -277,11 +288,12 @@ export class Effects {
   trigger(effectName, lm, label) {
     const def = EFFECTS[effectName];
     if (!def || !lm) return;
+    if (def.exclusive && this.active.some((a) => a.def === def)) return;
     const inst = Object.create(def);
     const ctx = this._ctx(lm);
     inst.start(ctx);
-    this.active.push({ inst, t: 0 });
-    if (label) this.banner(label, def.color);
+    this.active.push({ inst, def, t: 0 });
+    if (label || def.bannerImg) this.banner(label, def.color, def.bannerImg);
   }
 
   _ctx(lm) {

@@ -1,12 +1,34 @@
 // Templates live in localStorage, with JSON export/import as the durable copy.
 const KEY = 'anime-move-effects.v1';
 
-export function emptyData() { return { moves: [], idle: [] }; }
+// Permanent moves: always present, can't be deleted or renamed, effect is fixed.
+// Only their footage (recorded template clips) can be edited.
+export const BUILTIN_MOVES = [
+  {
+    id: 'akaza-final-form',
+    name: 'Akaza’s Destructive Death – Final Form: Blue Silver Chaotic Afterglow',
+    effect: 'akaza',
+    durationMs: 2000,
+  },
+];
+
+export function emptyData() { return withBuiltins({ moves: [], idle: [] }); }
+
+/** Ensures every built-in move exists (keeping its recorded clips) and sits at the top of the list. */
+export function withBuiltins(data) {
+  const builtins = BUILTIN_MOVES.map((b) => {
+    const saved = data.moves.find((m) => m.id === b.id);
+    return { ...b, builtin: true, templates: saved?.templates ?? [] };
+  });
+  const ids = new Set(BUILTIN_MOVES.map((b) => b.id));
+  const custom = data.moves.filter((m) => !ids.has(m.id) && m.effect !== 'akaza');
+  return { moves: [...builtins, ...custom], idle: data.idle ?? [] };
+}
 
 export function load() {
   try {
     const d = JSON.parse(localStorage.getItem(KEY));
-    if (d && Array.isArray(d.moves)) return { moves: d.moves, idle: d.idle ?? [] };
+    if (d && Array.isArray(d.moves)) return withBuiltins({ moves: d.moves, idle: d.idle ?? [] });
   } catch { /* ignore */ }
   return emptyData();
 }
