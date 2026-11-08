@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { IceClones } from './clones.js';
+import { CutoutStage, THEMES } from './clones.js';
 
 // ---------- GPU particle pool (additive glowing points) ----------
 class Particles {
@@ -215,13 +215,25 @@ const EFFECTS = {
   },
 
   // Akaza's Destructive Death – Final Form (built-in move only): snowflake floor + four delayed
-  // copies in a V; animation runs in IceClones.update (see clones.js)
+  // copies in a V; animation runs in CutoutStage.update (see clones.js)
   akaza: {
     duration: 6.5,
     color: '#9ff6ff',
     bannerImg: '/effects/title-ice.png',
     exclusive: true, // don't restart while it's already playing
-    start({ clones, lm, W, H, flash, shake }) { flash('#9ff6ff'); shake(); clones.start(lm, W, H); },
+    start({ stages, lm, W, H, flash, shake }) { flash('#9ff6ff'); shake(); stages.akaza.start(lm, W, H); },
+    tick() {},
+  },
+
+  // Strength in Numbers (built-in move only): Warriors crest floor + two mirrored Steph Curry jump
+  // shots whose balls meet above the person; animation runs in CutoutStage.update (see clones.js)
+  warriors: {
+    duration: 6.5,
+    color: '#ffc72c',
+    title: 'STRENGTH IN NUMBERS',
+    bannerClass: 'hold gold',
+    exclusive: true,
+    start({ stages, lm, W, H, flash, shake }) { flash('#ffc72c'); shake(); stages.warriors.start(lm, W, H); },
     tick() {},
   },
 };
@@ -239,7 +251,7 @@ export class Effects {
     this.camera = new THREE.OrthographicCamera(0, 1, 0, 1, -10, 10); // y down, pixel units
     this.ps = new Particles(this.scene);
     this.ps.points.renderOrder = 10; // particles above the clone layer
-    this.clones = new IceClones(this.scene, this.renderer);
+    this.stages = Object.fromEntries(Object.entries(THEMES).map(([k, th]) => [k, new CutoutStage(this.scene, this.renderer, th)]));
     this.active = [];
     this.resize();
     new ResizeObserver(() => this.resize()).observe(stageEl);
@@ -267,8 +279,9 @@ export class Effects {
     this.stage.classList.add('shake');
   }
 
-  banner(text, color, img) {
+  banner(text, color, img, cls = '') {
     const el = this.bannerEl;
+    el.className = 'banner' + (cls ? ' ' + cls : '');
     if (img) {
       const im = new Image();
       im.src = img;
@@ -293,23 +306,23 @@ export class Effects {
     const ctx = this._ctx(lm);
     inst.start(ctx);
     this.active.push({ inst, def, t: 0 });
-    if (label || def.bannerImg) this.banner(label, def.color, def.bannerImg);
+    if (label || def.bannerImg || def.title) this.banner(def.title ?? label, def.color, def.bannerImg, def.bannerClass);
   }
 
   _ctx(lm) {
     return {
       ps: this.ps, lm, W: this.W, H: this.H, scale: this.H / 720,
-      flash: (c) => this.flash(c), shake: () => this.shake(), clones: this.clones,
+      flash: (c) => this.flash(c), shake: () => this.shake(), stages: this.stages,
     };
   }
 
   /** Per detected video frame: hands the segmentation mask to the clone layer while it runs. */
   setFrame(video, mask, lm) {
-    if (this.clones.wantsMask) this.clones.capture(video, mask, lm, this.W, this.H);
+    for (const st of Object.values(this.stages)) if (st.wantsMask) st.capture(video, mask, lm, this.W, this.H);
   }
 
   update(dt, lm) {
-    this.clones.update(dt, this.W, this.H, this.ps, this.H / 720);
+    for (const st of Object.values(this.stages)) st.update(dt, this.W, this.H, this.ps, this.H / 720);
     const ctx = lm ? this._ctx(lm) : null;
     for (const a of this.active) {
       a.t += dt;

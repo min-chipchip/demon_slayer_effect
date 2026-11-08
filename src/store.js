@@ -10,6 +10,12 @@ export const BUILTIN_MOVES = [
     effect: 'akaza',
     durationMs: 2000,
   },
+  {
+    id: 'strength-in-numbers',
+    name: 'Strength in Numbers',
+    effect: 'warriors',
+    durationMs: 2000,
+  },
 ];
 
 export function emptyData() { return withBuiltins({ moves: [], idle: [] }); }
@@ -21,7 +27,8 @@ export function withBuiltins(data) {
     return { ...b, builtin: true, templates: saved?.templates ?? [] };
   });
   const ids = new Set(BUILTIN_MOVES.map((b) => b.id));
-  const custom = data.moves.filter((m) => !ids.has(m.id) && m.effect !== 'akaza');
+  const builtinFx = new Set(BUILTIN_MOVES.map((b) => b.effect));
+  const custom = data.moves.filter((m) => !ids.has(m.id) && !builtinFx.has(m.effect));
   return { moves: [...builtins, ...custom], idle: data.idle ?? [] };
 }
 

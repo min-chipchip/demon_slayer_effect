@@ -60,7 +60,7 @@ $('importFile').onchange = async (e) => {
 };
 let testIdx = 0;
 $('testBtn').onclick = () => {
-  const names = ['flame', 'water', 'thunder', 'wind', 'akaza', 'jump'];
+  const names = ['flame', 'water', 'thunder', 'wind', 'akaza', 'warriors', 'jump'];
   const name = names[testIdx++ % names.length];
   effects.trigger(name, screenLm ?? fakePose(), name.toUpperCase());
 };
@@ -78,7 +78,7 @@ function renderMoveList() {
     const row = document.createElement('div');
     if (m.builtin) {
       // Permanent move: only its footage can be edited (record more / undo last / clear)
-      row.className = 'move builtin';
+      row.className = 'move builtin' + (m.effect === 'warriors' ? ' gold' : '');
       row.innerHTML = `<span><b></b> <span class="tag">Permanent</span><small></small></span><span><button data-a="rec">Record footage</button> <button data-a="undo">Undo last</button> <button data-a="clr">Clear</button></span>`;
       row.querySelector('b').textContent = m.name;
       row.querySelector('small').textContent = `${m.templates.length} clip(s) · ${m.durationMs / 1000}s`;
