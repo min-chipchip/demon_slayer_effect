@@ -1,5 +1,7 @@
 # Anime Move Effects
 
+**Live demo: https://min-chipchip.github.io/demon_slayer_effect/** (allow camera access, then step back until your whole body is in frame)
+
 Webcam toy that watches your body and fires anime-style visual effects when you do a move it knows. It comes with two signature moves already trained, and you can teach it your own: record a move a few times, pick an effect, and from then on doing that move sets off flame, water, thunder or wind on top of the live video. Jumping triggers its own effect.
 
 Everything runs in the browser. No video leaves your machine.
@@ -89,6 +91,22 @@ webcam ─▶ MediaPipe Pose ─▶ One Euro smoothing ─▶ normalize ─▶ D
 - **Effects** ([src/effects.js](src/effects.js), [src/clones.js](src/clones.js)): a pooled GPU particle system with additive blending, plus screen flash, shake and a name banner. The built-in moves composite the video through the segmentation mask to draw delayed copies of you (Akaza) or image cutouts (Warriors) over a spinning floor emblem.
 - **Storage** ([src/store.js](src/store.js)): built-in move definitions, `localStorage` persistence, bundled defaults and JSON export/import.
 
+## Design choices
+
+- **Template matching instead of a trained classifier.** A classifier would need hundreds of labelled examples per move and a training step. DTW over normalized poses works from 3–5 recordings made in the browser. That's what makes "teach it your own move" possible, and DTW copes with doing the move faster or slower than you recorded it.
+- **Pose landmarks, not raw pixels.** Matching on 13 normalized joints ignores clothing, lighting and background, and keeps a whole clip to under a thousand numbers (13 joints × 2 coordinates × 32 steps). That is cheap enough to run against every template on every frame.
+- **Idle clips set the threshold.** A fixed threshold either misses the move or fires on random movement. Each move's threshold comes from how consistent its own templates are, and is then capped just below the closest match found in normal movement. Two consecutive hits and a cooldown stop it from flickering.
+- **Everything runs on the device.** Inference runs in WebAssembly/WebGL in the browser, so no video leaves the machine, and the app can be hosted as static files with no backend.
+- **Segmentation mask for the Akaza effect.** The anime's afterimages are copies of the character himself, so the effect cuts *you* out of the video with MediaPipe's person mask and replays delayed copies of you, instead of drawing generic particles.
+
+## Limitations and next steps
+
+- Matching is tuned to whoever recorded the templates. Other body types and camera angles may need a higher **Sensitivity** or their own recordings.
+- It needs the full body in frame and decent lighting. Close-up laptop webcams struggle.
+- Only one person is tracked.
+- The JS bundle is about 1 MB because three.js and MediaPipe are bundled in. Loading three.js lazily, on the first effect, would speed up the first load.
+- Ideas: pose-independent features such as joint angles to match people of different builds better, sound effects, and recording a clip of the effect to share.
+
 ## Project layout
 
 ```
@@ -112,6 +130,8 @@ npm run build
 ```
 
 Output goes to `dist/`, which is the only folder you need to host. Serve it over HTTPS (or `localhost`), because browsers only allow camera access in a secure context. `npm run preview` serves the build locally.
+
+The live site is on GitHub Pages. [.github/workflows/deploy.yml](.github/workflows/deploy.yml) builds and deploys it on every push to `main`. [vite.config.js](vite.config.js) sets a relative `base` and the effect images are referenced through `import.meta.env.BASE_URL`, so the same build works under the `/demon_slayer_effect/` subpath or at a domain root.
 
 ## Tips
 
