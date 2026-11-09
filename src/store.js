@@ -1,4 +1,8 @@
 // Templates live in localStorage, with JSON export/import as the durable copy.
+// src/default-moves.json is bundled into the build and used for any visitor
+// who has nothing saved yet (replace it with an exported anime-moves.json).
+import DEFAULTS from './default-moves.json';
+
 const KEY = 'anime-move-effects.v1';
 
 // Permanent moves: always present, can't be deleted or renamed, effect is fixed.
@@ -32,12 +36,16 @@ export function withBuiltins(data) {
   return { moves: [...builtins, ...custom], idle: data.idle ?? [] };
 }
 
+export function defaultData() {
+  return withBuiltins({ moves: structuredClone(DEFAULTS.moves ?? []), idle: structuredClone(DEFAULTS.idle ?? []) });
+}
+
 export function load() {
   try {
     const d = JSON.parse(localStorage.getItem(KEY));
     if (d && Array.isArray(d.moves)) return withBuiltins({ moves: d.moves, idle: d.idle ?? [] });
   } catch { /* ignore */ }
-  return emptyData();
+  return defaultData();
 }
 
 export function save(data) {
