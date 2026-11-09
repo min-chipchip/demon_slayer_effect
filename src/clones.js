@@ -22,7 +22,7 @@ const GOLD = [1, 0.78, 0.17];
 // (nose->feet), handX/handY = ball release point in the image (0..1, y down), flip = mirrored
 export const THEMES = {
   akaza: {
-    floorTex: '/effects/snowflake.png', floorAdditive: true, floorSpin: [3, 0.6], floorSquash: 0.28,
+    floorTex: import.meta.env.BASE_URL + 'effects/snowflake.png', floorAdditive: true, floorSpin: [3, 0.6], floorSquash: 0.28,
     backdrop: { hot: [0.95, 0.16, 0.06], dark: [0.10, 0.0, 0.02] },
     realRim: [0.6, 0.97, 1], copyRim: [1, 0.3, 0.1], copyTint: [1.0, 0.22, 0.12], tintAmt: 0.65,
     slots: [
@@ -41,13 +41,13 @@ export const THEMES = {
   },
 
   warriors: {
-    floorTex: '/effects/warriors-logo.png', floorAdditive: false, floorSpin: [2.4, 0], floorSquash: 0.3,
+    floorTex: import.meta.env.BASE_URL + 'effects/warriors-logo.png', floorAdditive: false, floorSpin: [2.4, 0], floorSquash: 0.3,
     backdrop: { hot: [1.0, 0.8, 0.16], dark: [0.16, 0.09, 0.0] },
     realRim: [1, 0.86, 0.3], copyRim: [1, 0.8, 0.2], copyTint: [1.0, 0.82, 0.3], tintAmt: 0.25,
     slots: [
       // Original photo leans left, so it stands on the right; the mirrored one on the left.
-      { sprite: '/effects/curry.png', bodyFrac: 0.72, handX: 0.3, handY: 0.0, flip: true, dx: -0.95, lift: 0.1, s: 0.95, op: 1, fadeAt: 1.6, order: 3 },
-      { sprite: '/effects/curry.png', bodyFrac: 0.72, handX: 0.3, handY: 0.0, flip: false, dx: 0.95, lift: 0.1, s: 0.95, op: 1, fadeAt: 1.6, order: 3 },
+      { sprite: import.meta.env.BASE_URL + 'effects/curry.png', bodyFrac: 0.72, handX: 0.3, handY: 0.0, flip: true, dx: -0.95, lift: 0.1, s: 0.95, op: 1, fadeAt: 1.6, order: 3 },
+      { sprite: import.meta.env.BASE_URL + 'effects/curry.png', bodyFrac: 0.72, handX: 0.3, handY: 0.0, flip: false, dx: 0.95, lift: 0.1, s: 0.95, op: 1, fadeAt: 1.6, order: 3 },
       { delay: 0, dx: 0, lift: 0, s: 1, op: 1, fadeAt: 0, order: 4, real: true },
     ],
     particles(ps, st, W, H, scale) {

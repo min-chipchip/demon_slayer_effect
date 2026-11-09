@@ -219,7 +219,7 @@ const EFFECTS = {
   akaza: {
     duration: 6.5,
     color: '#9ff6ff',
-    bannerImg: '/effects/title-ice.png',
+    bannerImg: import.meta.env.BASE_URL + 'effects/title-ice.png',
     exclusive: true, // don't restart while it's already playing
     start({ stages, lm, W, H, flash, shake }) { flash('#9ff6ff'); shake(); stages.akaza.start(lm, W, H); },
     tick() {},
